@@ -2,7 +2,8 @@
 Exam project for Computational Neuroscience 2025
 
 ## Repilcating a neural network in the Basal Ganglia
-This project will attempt to replicate the Multiple categorisation system (COVIS) that is described in the paper "A neuropsychological theory of multiple systems in category learning" by Ashby et. al. 
+This project will attempt to replicate the Multiple categorisation system (COVIS) that is described in the paper  "A neuropsychological theory of multiple systems in category learning" by Ashby et. al. 
+
 link: https://pubmed.ncbi.nlm.nih.gov/9697427/
 
 ## The model
