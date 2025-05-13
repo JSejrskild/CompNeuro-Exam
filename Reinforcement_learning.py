@@ -57,7 +57,7 @@ g_B[:, 0] = 0 # initial synaptic conductance
 
 # weight betwee neuron A and neuron B
 w = np.zeros(n)
-w[0] = 0.8
+w[0] = 0.4
 
 # critic parameters
 response = np.zeros(N)
@@ -206,4 +206,4 @@ def update(frame):
     return title, z0, z1, z2, z3, z4
 
 ani = FuncAnimation(fig, update, frames=N-1, blit=False, interval=100)
-ani.save("videos/bio_two_cell_hebb_rl_weight08.mp4", writer="ffmpeg", fps=10)
+ani.save("videos/bio_two_cell_hebb_rl.mp4", writer="ffmpeg", fps=10)
