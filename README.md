@@ -7,9 +7,10 @@ This project will attempt to replicate the Multiple categorisation system (COVIS
 link: https://pubmed.ncbi.nlm.nih.gov/9697427/
 
 ## The model
-The model will represent a dual processing system in categorisation. 
-One direct route through the basal ganglia (striatum) and one (one-dimentional) route though a verbal rule in the prefrontal lobe. 
-These two processing pathways will both try to find the optimal rule to an arbitrary visual rule in a categorisation task. 
+The model will simulate a dual-process system involved in categorization.
+One pathway operates via the basal ganglia (specifically the striatum), implementing a non-verbal categorization strategy.
+The other relies on a one-dimensional, verbal rule processed in the prefrontal cortex.
+Both pathways will independently attempt to identify the optimal rule for an arbitrary visual categorization task.
 
 Johanne :)
 
