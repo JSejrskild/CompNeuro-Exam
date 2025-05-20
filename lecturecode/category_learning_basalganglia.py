@@ -207,6 +207,8 @@ for trl in range(n_trl - 1):
 
     w_vis_msn[:, 0] += dwA
     w_vis_msn[:, 1] += dwB
+    
+# Next TODO: make the plots better 
 
 # plot network activity per trial for diagnostic purposes
 fig, ax = plt.subplots(2, 6, squeeze=False, figsize=(18, 4))
