@@ -117,8 +117,8 @@ for trl in range(n_trl - 1):
 
         if i > n // 3:
             # Add visual input to msn neurons as the dot product of vis_act with w_vis_msn
-            I_net[0, i - 1] = np.dot(vis_act.flatten(), w_vis_msn[:, 0])
-            I_net[4, i - 1] = np.dot(vis_act.flatten(), w_vis_msn[:, 1])
+            I_net[0, i - 1] = np.dot(vis_act.flatten(), w_vis_msn[:, 0]) # How much the visual input is affecting the striatal neurons (a answer)
+            I_net[4, i - 1] = np.dot(vis_act.flatten(), w_vis_msn[:, 1]) # How much the visual input is affecting the striatal neurons (b answer)
 
         # Compute net input using matrix multiplication and remove self-connections
         I_net[:, i - 1] += w.T @ g[:, i - 1] - np.diag(w) * g[:, i - 1]
