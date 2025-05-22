@@ -171,8 +171,9 @@ for trl in range(n_trl - 1):
     else:
         r[trl] = 0
 
+    print(f"current confidence {p[trl]}")
     # reward prediction error
-    rpe[trl] = r[trl] - p[trl]
+    rpe[trl] = r[trl] - p[trl] #this means that it grows less and less after a lot of correct guesses
 
     # update the reward prediction
     p[trl + 1] = p[trl] + alpha_critic * rpe[trl]

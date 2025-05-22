@@ -15,7 +15,6 @@ from datetime import datetime
 from matplotlib.animation import FuncAnimation
 
 
-
 ########## Global Variables/Arrrays ##########
 
 # Simulation parameters
@@ -23,10 +22,13 @@ T = 3000
 dt = 0.1
 t = np.arange(0, T, dt)
 n = t.shape[0]
-n_trl = 100
+n_trl = 10
 
-# Arrays
-resp = np.zeros(n_trl) #Response
+# Arrays 
+resp_neuron = np.zeros(n_trl) #Response - procedural pathway
+resp_rulebased = np.zeros(n_trl) #Response - rulebased pathway
+confidence_neuron = np.zeros(n_trl) #Confidence - procedural pathway
+confidence_rulebased = np.zeros(n_trl) #Confidence - rulebased pathway
 cat = np.zeros(n_trl) # Category
 rt = np.zeros(n_trl) # response time
 resp_thresh = 1e10 # response threshold - how active should one pathway be compared to the other to create a response
@@ -36,12 +38,11 @@ vis_dim = 100 #Dimensions 100x100
 w_vis_msn = np.random.uniform(0.2, 0.4, (vis_dim**2, 2)) # starts narrow 
 vis_act = np.zeros((vis_dim, vis_dim)) # visual activation - starts as nothing
 
-# Visual input categories
- # select stimulus (x, y) by sampling from a uniform distribution in [0, 100]
-x = np.random.uniform(0, 100)
-y = np.random.uniform(0, 100)
+# Initialize the confidence 
+confidence_neuron[0] = 0.01 # initial confidence for procedural pathway
+confidence_rulebased[0] = 0.99 # initial confidence for rulebased pathway
 
-########## Procedural Pathway - Spinking neuron ##########
+########## Procedural Pathway - Spinking neuron - Initialisation  ##########
 
 # Variables and arrays
 psp_amp = 3e5  # post-synaptic potential amplitude
@@ -49,9 +50,11 @@ psp_decay = 100  # post-synaptic potential decay time constant
 
 # for each tiral not each time step
 r = np.zeros(n_trl)
-p = np.zeros(n_trl)
 rpe = np.zeros(n_trl) # are sort of used instead of dopamine 
-alpha_critic = 0.01 # learning rate for critic
+rpe_rulebased = np.zeros(n_trl) # same for rulebased pathway
+alpha_critic = 0.38 # learning rate for critic
+# make learning rate for neuron as array
+# make learning rate for rulebased as an array
 
 # Synaptic plasticity learning rules
 # how the striatal synapses learn
@@ -117,9 +120,16 @@ vis_act_over_time = np.zeros((n_trl, vis_dim, vis_dim))
 w_vis_msn_over_time_A = np.zeros((n_trl, vis_dim, vis_dim))
 w_vis_msn_over_time_B = np.zeros((n_trl, vis_dim, vis_dim))
 
-print("Starting simulation...")
+print("Starting loop...")
 
 for trl in range(n_trl - 1):
+    
+    # Visual input categories
+    # select stimulus (x, y) by sampling from a uniform distribution in [0, 100]
+    x = np.random.uniform(0, 100)
+    y = np.random.uniform(0, 100)
+    
+    ########## Procedural Pathway ##########
     
     # assign category label
     if x > y:
@@ -168,39 +178,65 @@ for trl in range(n_trl - 1):
         # response
         # g[3, i] = motor cortex A answer and g[7, i] = motor cortex B answer
         if (g[3, i] - g[7, i]) > resp_thresh:
-            resp[trl] = 1
+            resp_neuron[trl] = 1
             rt[trl] = i
             break
         elif (g[7, i] - g[3, i]) > resp_thresh:
-            resp[trl] = 2
+            resp_neuron[trl] = 2
             rt[trl] = i
             break
 
     # pick a response if it hasn't happened already
     if rt[trl] == 0:
-        resp[trl] = np.argmax(g[(3, 7), i]) + 1 # if neither pathwaw produced an action potentianl then pick the one that was most active
+        resp_neuron[trl] = np.argmax(g[(3, 7), i]) + 1 # if neither pathwaw produced an action potentianl then pick the one that was most active
         rt[trl] = i
+    
+   
 
-    # feedback
-    if cat[trl] == resp[trl]:
+    ########## Rulebased Pathway - Super simple ##########
+    
+    # Choosing category 1 if the x coordinate is larger than 50 else category 2
+    if x > 50:
+        resp_rulebased[trl] = 1                        
+    else:
+        resp_rulebased[trl] = 2
+   
+    
+    ########## Feedback to both systems ##########
+    
+    # Was the guess correct - Procedural pathway
+    if cat[trl] == resp_rulebased[trl]:
         r[trl] = 1
     else:
         r[trl] = 0
+        
+    # Confidence for rulebased
+    rpe_rulebased[trl] = r[trl] - confidence_rulebased[trl]
 
-    # reward prediction error
-    rpe[trl] = r[trl] - p[trl]
-
+    print(f"current confidence - rulebased {confidence_rulebased[trl]}")
+    
+    # !! I want to make the weighted mean instead over the last five instances maybe?
     # update the reward prediction
-    p[trl + 1] = p[trl] + alpha_critic * rpe[trl]
+    weighted_mean = np.average(confidence_rulebased[:trl+1])
+    confidence_rulebased[trl + 1] = weighted_mean + alpha_critic * rpe_rulebased[trl] 
+    
+    #### Procedural pathway
+    
+    # reward prediction error
+    rpe[trl] = r[trl] - confidence_neuron[trl]
+
+    print(f"current confidence - neuron {confidence_neuron[trl]}")
+    # update the reward prediction
+    confidence_neuron[trl + 1] = confidence_neuron[trl] + alpha_critic * rpe[trl] 
 
     # Update visual-msn weights vs 3-factor RL rule 
     pre = vis_act.flatten() # flatten the 100x100 visual fiels to one long array
     post = g[(0, 4), :].sum(axis=1) 
 
     # implement / force hard laterial inhibition
-    if resp[trl] == 1: # if the response was A 
+    if resp_neuron[trl] == 1: # if the resp_neurononse was A 
         post[1] = 0 # force the B pathway to be inactive
-    elif resp[trl] == 2:
+    elif resp_neuron[trl] == 2:
         post[0] = 0
 
     post_ltp_1 = np.heaviside(post - theta, 0)
@@ -214,7 +250,7 @@ for trl in range(n_trl - 1):
     post_ltp_2 = (1, 1)
     post_ltd_2 = (1, 1)
 
-# The LTP and LTD can occur in different rates based on alpha and beta weights 
+    # The LTP and LTD can occur in different rates based on alpha and beta weights 
     if rpe[trl] > 0:
         # LTP caused by strong post-synaptic activity and positive reward prediction error
         dw_1A = alpha_w * pre * post_ltp_1[0] * post_ltp_2[0] * (1 - w_vis_msn[:, 0]) * rpe[trl]
@@ -237,68 +273,9 @@ for trl in range(n_trl - 1):
     w_vis_msn[:, 0] += dwA
     w_vis_msn[:, 1] += dwB
     
-
-########## Rulebased Pathway - Super simple ##########
-
-
-########## Chosing a Global Response ##########
-
-
-########## Plotting ##########
-
-
-
-
-
-psp_amp = 3e5  # post-synaptic potential amplitude
-psp_decay = 100  # post-synaptic potential decay time constant
-
-# NOTE: Only inlucding direct pathway neurons for procedural category learning
-# C, vr, vt, vp, a, b, c, d, k, E
-izp = np.array([
-    # A pathway neurons  - Response A
-    [50, -80, -25, 40, 0.01, -20, -55, 150, 1, 0],      # str_d1 A
-    [100, -60, -40, 35, 0.03, -2, -50, 100, 0.7, 100],  # gpi A
-    [100, -60, -40, 35, 0.03, -2, -50, 100, 0.7, 100],  # thl A
-    [100, -60, -40, 35, 0.03, -2, -50, 100, 0.7, 0],    # ctx A
-    # B pathway neurons  -  Response B
-    [50, -80, -25, 40, 0.01, -20, -55, 150, 1, 0],      # str_d1 B
-    [100, -60, -40, 35, 0.03, -2, -50, 100, 0.7, 100],  # gpi B
-    [100, -60, -40, 35, 0.03, -2, -50, 100, 0.7, 100],  # thl B
-    [100, -60, -40, 35, 0.03, -2, -50, 100, 0.7, 0],    # ctx B
-])
-
-# NOTE: This is a new **very elegant** method of selecting neuron
-# parameters to work with the activity propagation method used below
-C, vr, vt, vpeak, a, b, c, d, k, E = izp.T
-
-n_cells = izp.shape[0]
-
-# network weights
-w = np.zeros((n_cells, n_cells))
-
-# A direct pathway
-w[0, 1] = -1   # str_d1 -> gpi
-w[1, 2] = -1   # gpi -> thl
-w[2, 3] = 1    # thl -> ctx
-
-# B direct pathway
-w[4, 5] = -1   # str_d1 -> gpi
-w[5, 6] = -1   # gpi -> thl
-w[6, 7] = 1    # thl -> ctx
-
-# laterial inhibition between str_d1 neurons
-# Ensuring that only one str_d1 neuron is active at a time
-w[0, 4] = -50.0  # str_d1 A -> str_d1 B
-w[4, 0] = -50.0  # str_d1 B -> str_d1 A
-
-# Weights: 
-#  [[  0.  -1.   0.   0. -50.   0.   0.   0.]
-#  [  0.   0.  -1.   0.   0.   0.   0.   0.]
-#  [  0.   0.   0.   1.   0.   0.   0.   0.]
-#  [  0.   0.   0.   0.   0.   0.   0.   0.]
-#  [-50.   0.   0.   0.   0.  -1.   0.   0.]
-#  [  0.   0.   0.   0.   0.   0.  -1.   0.]
-#  [  0.   0.   0.   0.   0.   0.   0.   1.]
-#  [  0.   0.   0.   0.   0.   0.   0.   0.]]
-
+    # Was the response correct - Rulebased pathway
+    
+    
+    ########## Chosing a Global Response ##########
+    
+     ########## Plotting ##########
