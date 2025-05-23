@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 from datetime import datetime
 from matplotlib.animation import FuncAnimation
@@ -175,7 +176,7 @@ for trl in range(n_trl - 1):
     # reward prediction error
     rpe[trl] = r[trl] - p[trl] #this means that it grows less and less after a lot of correct guesses
 
-    # update the reward prediction
+    # update the reward prediction - no confidence?
     p[trl + 1] = p[trl] + alpha_critic * rpe[trl]
 
     # Update visual-msn weights vs 3-factor RL rule 
@@ -230,7 +231,16 @@ for trl in range(n_trl - 1):
     
     print(f"trial: {trl} completed")
     
-    
+# save some of the variables as a .csv to inpect 
+df = pd.DataFrame({
+    "trial": np.arange(n_trl),
+    "reward": r,
+    "prediction": p,
+    "rpe": rpe
+})  
+ 
+# Save to CSV
+df.to_csv(f"csv_r_p_rpe.csv", index=False)
   
 print("Simulation finished. Now plotting") 
  
