@@ -13,7 +13,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from datetime import datetime
 from matplotlib.animation import FuncAnimation
-
+import pandas as pd
 
 ########## Global Variables/Arrrays ##########
 
@@ -55,6 +55,7 @@ psp_decay = 100  # post-synaptic potential decay time constant
 
 # for each tiral not each time step
 r = np.zeros(n_trl)
+r_rulebased = np.zeros(n_trl) # reward for rulebased pathway
 rpe = np.zeros(n_trl) # are sort of used instead of dopamine 
 rpe_rulebased = np.zeros(n_trl) # same for rulebased pathway
 alpha_critic = 0.38 # learning rate for critic
@@ -197,7 +198,6 @@ for trl in range(n_trl - 1):
         rt[trl] = i
     
    
-
     ########## Rulebased Pathway - Super simple ##########
     
     # Choosing category 1 if the x coordinate is larger than 50 else category 2
@@ -209,14 +209,14 @@ for trl in range(n_trl - 1):
     
     ########## Feedback to both systems ##########
     
-    # Was the guess correct - Procedural pathway
+    # Was the guess correct - Rulebased pathway
     if cat[trl] == resp_rulebased[trl]:
-        r[trl] = 1
+        r_rulebased[trl] = 1
     else:
-        r[trl] = 0
+        r_rulebased[trl] = 0
         
     # Confidence for rulebased
-    rpe_rulebased[trl] = r[trl] - confidence_rulebased[trl]
+    rpe_rulebased[trl] = r_rulebased[trl] - confidence_rulebased[trl]
 
     #print(f"current confidence - rulebased {confidence_rulebased[trl]}")
     
@@ -227,6 +227,11 @@ for trl in range(n_trl - 1):
 
     
     #### Procedural pathway
+    # Was the guess correct - Procedural pathway
+    if cat[trl] == resp_neuron[trl]:
+        r[trl] = 1
+    else:
+        r[trl] = 0
     
     # reward prediction error
     rpe[trl] = r[trl] - confidence_neuron[trl]
@@ -296,83 +301,95 @@ for trl in range(n_trl - 1):
         global_resp[trl] = resp_neuron[trl]
         print("Procedural pathway chosen")
     
+# save some of the variables as a .csv to inpect 
+df = pd.DataFrame({
+    "trial": np.arange(n_trl),
+    "Category": cat,
+    "response_neuron": resp_neuron,
+    "reward": r,
+    "rpe": rpe, 
+    "confidence_neuron": confidence_neuron,
+    "response_rulebased": resp_rulebased,
+    "reward_rulebased": r_rulebased,
+    "rpe_rulebased": rpe_rulebased,
+    "confidence_rulebased": confidence_rulebased
+})  
+ 
+# Save to CSV
+df.to_csv(f"csv_info_{timestamp}.csv", index=False)    
     
-    
-########## Plotting ##########
+# ########## Plotting ##########
 
-# plot the confidence for both pathways over trials
+# # plot the confidence for both pathways over trials
 
-import matplotlib.pyplot as plt
-import numpy as np
+# # Assume confidence_neuron, confidence_rulebased, resp_neuron, resp_rulebased, cat, global_resp are defined
+# n_trials = len(cat)
+# correctness = np.array([1 if cat[i] == global_resp[i] else 0 for i in range(n_trials)])
 
-# Assume confidence_neuron, confidence_rulebased, resp_neuron, resp_rulebased, cat, global_resp are defined
-n_trials = len(cat)
-correctness = np.array([1 if cat[i] == global_resp[i] else 0 for i in range(n_trials)])
+# # Create figure and subplots
+# fig, axs = plt.subplots(3, 1, figsize=(12, 12), sharex=True)
 
-# Create figure and subplots
-fig, axs = plt.subplots(3, 1, figsize=(12, 12), sharex=True)
+# # --- 1. Confidence of both pathways ---
+# axs[0].plot(confidence_neuron, label="Procedural Confidence", color="blue")
+# axs[0].plot(confidence_rulebased, label="Rulebased Confidence", color="orange")
+# axs[0].plot(correctness, label="Correct Response Indicator", color="gray", linewidth=1)
+# axs[0].set_ylabel("Confidence")
+# axs[0].set_title("Confidence of Both Pathways + Correctness")
+# axs[0].set_ylim(-0.1, 1.2)
+# axs[0].legend()
+# axs[0].grid(True)
 
-# --- 1. Confidence of both pathways ---
-axs[0].plot(confidence_neuron, label="Procedural Confidence", color="blue")
-axs[0].plot(confidence_rulebased, label="Rulebased Confidence", color="orange")
-axs[0].plot(correctness, label="Correct Response Indicator", color="gray", linewidth=1)
-axs[0].set_ylabel("Confidence")
-axs[0].set_title("Confidence of Both Pathways + Correctness")
-axs[0].set_ylim(-0.1, 1.2)
-axs[0].legend()
-axs[0].grid(True)
+# # --- 2. Procedural Pathway ---
+# axs[1].plot(resp_neuron, label="Procedural Response", color="blue")
+# axs[1].plot(confidence_neuron, label="Confidence", linestyle="--", color="skyblue")
+# axs[1].plot((np.array([1 if cat[i] == resp_neuron[i] else 0 for i in range(n_trials)])),
+#             label="Correctness vs. Procedural", color="gray", linewidth=1)
+# axs[1].set_ylabel("Response / Confidence")
+# axs[1].set_title("Procedural Pathway: Response + Confidence + Correctness")
+# axs[1].set_ylim(-0.1, 1.2)
+# axs[1].legend()
+# axs[1].grid(True)
 
-# --- 2. Procedural Pathway ---
-axs[1].plot(resp_neuron, label="Procedural Response", color="blue")
-axs[1].plot(confidence_neuron, label="Confidence", linestyle="--", color="skyblue")
-axs[1].plot((np.array([1 if cat[i] == resp_neuron[i] else 0 for i in range(n_trials)])),
-            label="Correctness vs. Procedural", color="gray", linewidth=1)
-axs[1].set_ylabel("Response / Confidence")
-axs[1].set_title("Procedural Pathway: Response + Confidence + Correctness")
-axs[1].set_ylim(-0.1, 1.2)
-axs[1].legend()
-axs[1].grid(True)
+# # --- 3. Rulebased Pathway ---
+# axs[2].plot(resp_rulebased, label="Rulebased Response", color="orange")
+# axs[2].plot(confidence_rulebased, label="Confidence", linestyle="--", color="navajowhite")
+# axs[2].plot((np.array([1 if cat[i] == resp_rulebased[i] else 0 for i in range(n_trials)])),
+#             label="Correctness vs. Rulebased", color="gray", linewidth=1)
+# axs[2].set_ylabel("Response / Confidence")
+# axs[2].set_xlabel("Trial")
+# axs[2].set_title("Rulebased Pathway: Response + Confidence + Correctness")
+# axs[2].set_ylim(-0.1, 1.2)
+# axs[2].legend()
+# axs[2].grid(True)
 
-# --- 3. Rulebased Pathway ---
-axs[2].plot(resp_rulebased, label="Rulebased Response", color="orange")
-axs[2].plot(confidence_rulebased, label="Confidence", linestyle="--", color="navajowhite")
-axs[2].plot((np.array([1 if cat[i] == resp_rulebased[i] else 0 for i in range(n_trials)])),
-            label="Correctness vs. Rulebased", color="gray", linewidth=1)
-axs[2].set_ylabel("Response / Confidence")
-axs[2].set_xlabel("Trial")
-axs[2].set_title("Rulebased Pathway: Response + Confidence + Correctness")
-axs[2].set_ylim(-0.1, 1.2)
-axs[2].legend()
-axs[2].grid(True)
-
-# Final layout and save
-plt.tight_layout()
-plt.savefig(f"plots/{timestamp}_pathways_confidence_correctness.png")
+# # Final layout and save
+# plt.tight_layout()
+# plt.savefig(f"plots/{timestamp}_pathways_confidence_correctness.png")
 
 
 
 
-########## Video ##########
-# Set up the plot
-fig, ax = plt.subplots(1, 3, figsize=(12, 4))
+# ########## Video ##########
+# # Set up the plot
+# fig, ax = plt.subplots(1, 3, figsize=(12, 4))
 
-# Initial images
-im0 = ax[0].imshow(vis_act_over_time[0], vmin=0, vmax=1, animated=True)
-im1 = ax[1].imshow(w_vis_msn_over_time_A[0], vmin=0, vmax=1, animated=True)
-im2 = ax[2].imshow(w_vis_msn_over_time_B[0], vmin=0, vmax=1, animated=True)
+# # Initial images
+# im0 = ax[0].imshow(vis_act_over_time[0], vmin=0, vmax=1, animated=True)
+# im1 = ax[1].imshow(w_vis_msn_over_time_A[0], vmin=0, vmax=1, animated=True)
+# im2 = ax[2].imshow(w_vis_msn_over_time_B[0], vmin=0, vmax=1, animated=True)
 
-# Add titles
-ax[0].set_title("Visual Input")
-ax[1].set_title("Prediction A (Weights to MSN A)")
-ax[2].set_title("Prediction B (Weights to MSN B)")
+# # Add titles
+# ax[0].set_title("Visual Input")
+# ax[1].set_title("Prediction A (Weights to MSN A)")
+# ax[2].set_title("Prediction B (Weights to MSN B)")
 
-def update(frame):
-    im0.set_array(vis_act_over_time[frame])
-    im1.set_array(w_vis_msn_over_time_A[frame])
-    im2.set_array(w_vis_msn_over_time_B[frame])
-    return im0, im1, im2
+# def update(frame):
+#     im0.set_array(vis_act_over_time[frame])
+#     im1.set_array(w_vis_msn_over_time_A[frame])
+#     im2.set_array(w_vis_msn_over_time_B[frame])
+#     return im0, im1, im2
 
-ani = FuncAnimation(fig, update, frames=n_trl, interval=100, blit=True)
+# ani = FuncAnimation(fig, update, frames=n_trl, interval=100, blit=True)
 
-# Save with timestamp
-ani.save(f"videos/{timestamp}_vis_input_animation{n_trl}_{vis_dim}.mp4", writer="ffmpeg", fps=10)
+# # Save with timestamp
+# ani.save(f"videos/{timestamp}_vis_input_animation{n_trl}_{vis_dim}.mp4", writer="ffmpeg", fps=10)
