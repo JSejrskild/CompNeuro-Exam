@@ -317,7 +317,7 @@ df = pd.DataFrame({
 })  
  
 # Save to CSV
-df.to_csv(f"csv_info_{timestamp}.csv", index=False)    
+df.to_csv(f"csv_files/csv_info_{timestamp}.csv", index=False)    
     
 # ########## Plotting ##########
 
