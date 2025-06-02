@@ -26,7 +26,7 @@ T = 3000
 dt = 0.1
 t = np.arange(0, T, dt)
 n = t.shape[0]
-n_trl = 20
+n_trl = 50
 
 # Arrays 
 resp_neuron = np.zeros(n_trl) #Response - procedural pathway
@@ -141,16 +141,16 @@ for trl in range(n_trl - 1):
     
     # assign category label
     if x > y:
-        cat[trl] = 1
+        cat[trl] = 0
     else:
-        cat[trl] = 2
+        cat[trl] = 1
         
     ########## Procedural Pathway ##########
 
     # compute visual response to stimulus vis_act as a 2D Gaussian
     x_grid, y_grid = np.meshgrid(np.arange(vis_dim), np.arange(vis_dim))
-    vis_act = np.exp(-((x_grid - x)**2 + (y_grid - y)**2) / (2 * 2**2)) # The 10 controls for the width of the Gaussian - can be played around with
-    vis_act *= 10 # the amplitude - can be played around with if the network is not responding enough or too much 
+    vis_act = np.exp(-((x_grid - x)**2 + (y_grid - y)**2) / (2 * 6**2)) # The 10 controls for the width of the Gaussian - can be played around with
+    vis_act *= 15 # the amplitude - can be played around with if the network is not responding enough or too much 
 
     # reset I_net
     I_net.fill(0)
@@ -188,11 +188,11 @@ for trl in range(n_trl - 1):
         # response
         # g[3, i] = motor cortex A answer and g[7, i] = motor cortex B answer
         if (g[3, i] - g[7, i]) > resp_thresh:
-            resp_neuron[trl] = 1
+            resp_neuron[trl] = 0
             rt[trl] = i
             break
         elif (g[7, i] - g[3, i]) > resp_thresh:
-            resp_neuron[trl] = 2
+            resp_neuron[trl] = 1
             rt[trl] = i
             break
 
@@ -206,9 +206,9 @@ for trl in range(n_trl - 1):
     
     # Choosing category 1 if the x coordinate is larger than 50 else category 2
     if x > 50:
-        resp_rulebased[trl] = 1                        
+        resp_rulebased[trl] = 0                      
     else:
-        resp_rulebased[trl] = 2
+        resp_rulebased[trl] = 1
    
     
     ########## Feedback to both systems ##########
@@ -250,9 +250,9 @@ for trl in range(n_trl - 1):
     post = g[(0, 4), :].sum(axis=1) 
 
     # implement / force hard laterial inhibition
-    if resp_neuron[trl] == 1: # if the resp_neurononse was A 
+    if resp_neuron[trl] == 0: # if the resp_neurononse was A 
         post[1] = 0 # force the B pathway to be inactive
-    elif resp_neuron[trl] == 2:
+    elif resp_neuron[trl] == 1:
         post[0] = 0
 
     post_ltp_1 = np.heaviside(post - theta, 0)
@@ -339,77 +339,79 @@ df_correctness = pd.DataFrame({
 })
 df_correctness.to_csv(f"csv_files/csv_correctness_{timestamp}.csv", index=False)   
 
-# # Create figure and subplots
-# fig, axs = plt.subplots(3, 1, figsize=(12, 12), sharex=True)
+# Create figure and subplots
+fig, axs = plt.subplots(3, 1, figsize=(12, 12), sharex=True)
 
-# # --- 1. Confidence of both pathways ---
-# axs[0].plot(confidence_neuron, label="Procedural Confidence", color="blue")
-# axs[0].plot(confidence_rulebased, label="Rulebased Confidence", color="orange")
-# axs[0].plot(correctness, label="Correct Response Indicator", color="gray", linewidth=1)
-# axs[0].set_ylabel("Confidence")
-# axs[0].set_title("Confidence of Both Pathways + Correctness")
-# axs[0].set_ylim(-0.1, 1.2)
-# axs[0].legend()
-# axs[0].grid(True)
+# --- 1. Confidence of both pathways ---
+axs[0].plot(confidence_neuron, label="Procedural Confidence", color="blue")
+axs[0].plot(confidence_rulebased, label="Rulebased Confidence", color="orange")
+axs[0].plot(correctness, label="Correct Response Indicator", color="gray", linewidth=1)
+axs[0].set_ylabel("Confidence")
+axs[0].set_title("Confidence of Both Pathways + Correctness")
+axs[0].set_ylim(-0.1, 1.2)
+axs[0].legend()
+axs[0].grid(True)
 
-# # --- 2. Procedural Pathway ---
-# axs[1].plot(resp_neuron, label="Procedural Response", color="blue")
-# axs[1].plot(confidence_neuron, label="Confidence", linestyle="--", color="skyblue")
-# axs[0].plot(corectness_neuron, label="Correct Response Indicator", color="gray", linewidth=1)
-# axs[1].set_ylabel("Response / Confidence")
-# axs[1].set_title("Procedural Pathway: Response + Confidence + Correctness")
-# axs[1].set_ylim(-0.1, 1.2)
-# axs[1].legend()
-# axs[1].grid(True)
+# --- 2. Procedural Pathway ---
+axs[1].plot(resp_neuron, label="Procedural Response", color="blue")
+axs[1].plot(confidence_neuron, label="Confidence", linestyle="--", color="skyblue")
+axs[1].plot(corectness_neuron, label="Correct Response Indicator", color="gray", linewidth=1)
+axs[1].set_ylabel("Response / Confidence")
+axs[1].set_title("Procedural Pathway: Response + Confidence + Correctness")
+axs[1].set_ylim(-0.1, 1.2)
+axs[1].legend()
+axs[1].grid(True)
 
-# # --- 3. Rulebased Pathway ---
-# axs[2].plot(resp_rulebased, label="Rulebased Response", color="orange")
-# axs[2].plot(confidence_rulebased, label="Confidence", linestyle="--", color="navajowhite")
-# axs[0].plot(corectness_rulebased, label="Correct Response Indicator", color="gray", linewidth=1)
-# axs[2].set_ylabel("Response / Confidence")
-# axs[2].set_xlabel("Trial")
-# axs[2].set_title("Rulebased Pathway: Response + Confidence + Correctness")
-# axs[2].set_ylim(-0.1, 1.2)
-# axs[2].legend()
-# axs[2].grid(True)
+# --- 3. Rulebased Pathway ---
+axs[2].plot(resp_rulebased, label="Rulebased Response", color="orange")
+axs[2].plot(confidence_rulebased, label="Confidence", linestyle="--", color="navajowhite")
+axs[2].plot(corectness_rulebased, label="Correct Response Indicator", color="gray", linewidth=1)
+axs[2].set_ylabel("Response / Confidence")
+axs[2].set_xlabel("Trial")
+axs[2].set_title("Rulebased Pathway: Response + Confidence + Correctness")
+axs[2].set_ylim(-0.1, 1.2)
+axs[2].legend()
+axs[2].grid(True)
 
-# # Final layout and save
-# plt.tight_layout()
-# plt.savefig(f"plots/{timestamp}_pathways_confidence_correctness.png")
+# Final layout and save
+plt.tight_layout()
+plt.savefig(f"plots/{timestamp}_pathways_confidence_correctness.png")
+plt.close()
 
 
-# # Scatterplot of coordinates
+# Scatterplot of coordinates
 
-# coordinates = np.array(coordinates) # Convert to NumPy array for easy plotting
+coordinates = np.array(coordinates) # Convert to NumPy array for easy plotting
 
-# plt.scatter(coordinates[:, 0], coordinates[:, 1])
-# plt.xlabel('X')
-# plt.ylabel('Y')
-# plt.title('Coordinates Scatter Plot')
-# plt.show()
-# plt.savefig(f"plots/{timestamp}_coordinates_scatter_plot.png")
+plt.scatter(coordinates[:, 0], coordinates[:, 1])
+plt.xlabel('X')
+plt.ylabel('Y')
+plt.title('Coordinates Scatter Plot')
+plt.savefig(f"plots/{timestamp}_coordinates_scatter_plot.png")
+plt.close()
 
-# ########## Video ##########
-# # Set up the plot
-# fig, ax = plt.subplots(1, 3, figsize=(12, 4))
 
-# # Initial images
-# im0 = ax[0].imshow(vis_act_over_time[0], vmin=0, vmax=1, animated=True)
-# im1 = ax[1].imshow(w_vis_msn_over_time_A[0], vmin=0, vmax=1, animated=True)
-# im2 = ax[2].imshow(w_vis_msn_over_time_B[0], vmin=0, vmax=1, animated=True)
+########## Video ##########
+# Set up the plot
+fig, ax = plt.subplots(1, 3, figsize=(12, 4))
 
-# # Add titles
-# ax[0].set_title("Visual Input")
-# ax[1].set_title("Prediction A (Weights to MSN A)")
-# ax[2].set_title("Prediction B (Weights to MSN B)")
+# Initial images
+im0 = ax[0].imshow(vis_act_over_time[0], vmin=0, vmax=1, animated=True)
+im1 = ax[1].imshow(w_vis_msn_over_time_A[0], vmin=0, vmax=1, animated=True)
+im2 = ax[2].imshow(w_vis_msn_over_time_B[0], vmin=0, vmax=1, animated=True)
 
-# def update(frame):
-#     im0.set_array(vis_act_over_time[frame])
-#     im1.set_array(w_vis_msn_over_time_A[frame])
-#     im2.set_array(w_vis_msn_over_time_B[frame])
-#     return im0, im1, im2
+# Add titles
+ax[0].set_title("Visual Input")
+ax[1].set_title("Prediction A (Weights to MSN A)")
+ax[2].set_title("Prediction B (Weights to MSN B)")
 
-# ani = FuncAnimation(fig, update, frames=n_trl, interval=100, blit=True)
+def update(frame):
+    im0.set_array(vis_act_over_time[frame])
+    im1.set_array(w_vis_msn_over_time_A[frame])
+    im2.set_array(w_vis_msn_over_time_B[frame])
+    return im0, im1, im2
 
-# # Save with timestamp
-# ani.save(f"videos/{timestamp}_vis_input_animation{n_trl}_{vis_dim}.mp4", writer="ffmpeg", fps=10)
+ani = FuncAnimation(fig, update, frames=n_trl, interval=100, blit=True)
+
+# Save with timestamp
+ani.save(f"videos/{timestamp}_vis_input_animation{n_trl}_{vis_dim}.mp4", writer="ffmpeg", fps=10)
