@@ -392,6 +392,15 @@ plt.title('Visual stimnuli')
 plt.savefig(f"plots/{timestamp}_coordinates_scatter_plot.png")
 plt.close()
 
+# Scatterplot of rulebased rule
+plt.scatter(coordinates[:, 0], coordinates[:, 1])
+plt.axvline(x=50, color='red', linestyle='--', label='Decision Boundary (x=50)')
+plt.xlabel('x coordinates')
+plt.ylabel('y coordinates')
+plt.title('Visual stimuli')
+plt.legend()
+plt.savefig(f"plots/{timestamp}_rulebased_scatter_plot.png")
+plt.close()
 
 ########## Video ##########
 # Set up the plot
