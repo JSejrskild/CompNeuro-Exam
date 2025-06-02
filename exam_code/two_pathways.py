@@ -26,7 +26,7 @@ T = 3000
 dt = 0.1
 t = np.arange(0, T, dt)
 n = t.shape[0]
-n_trl = 50
+n_trl = 100
 
 # Arrays 
 resp_neuron = np.zeros(n_trl) #Response - procedural pathway
@@ -140,17 +140,17 @@ for trl in range(n_trl - 1):
     coordinates.append((x, y))
     
     # assign category label
-    if x > y:
-        cat[trl] = 0
-    else:
+    if x < y:
         cat[trl] = 1
+    else:
+        cat[trl] = 2
         
     ########## Procedural Pathway ##########
 
     # compute visual response to stimulus vis_act as a 2D Gaussian
     x_grid, y_grid = np.meshgrid(np.arange(vis_dim), np.arange(vis_dim))
     vis_act = np.exp(-((x_grid - x)**2 + (y_grid - y)**2) / (2 * 6**2)) # The 10 controls for the width of the Gaussian - can be played around with
-    vis_act *= 15 # the amplitude - can be played around with if the network is not responding enough or too much 
+    vis_act *= 20 # the amplitude - can be played around with if the network is not responding enough or too much 
 
     # reset I_net
     I_net.fill(0)
@@ -188,11 +188,11 @@ for trl in range(n_trl - 1):
         # response
         # g[3, i] = motor cortex A answer and g[7, i] = motor cortex B answer
         if (g[3, i] - g[7, i]) > resp_thresh:
-            resp_neuron[trl] = 0
+            resp_neuron[trl] = 1
             rt[trl] = i
             break
         elif (g[7, i] - g[3, i]) > resp_thresh:
-            resp_neuron[trl] = 1
+            resp_neuron[trl] = 2
             rt[trl] = i
             break
 
@@ -206,9 +206,9 @@ for trl in range(n_trl - 1):
     
     # Choosing category 1 if the x coordinate is larger than 50 else category 2
     if x > 50:
-        resp_rulebased[trl] = 0                      
+        resp_rulebased[trl] = 1                    
     else:
-        resp_rulebased[trl] = 1
+        resp_rulebased[trl] = 2
    
     
     ########## Feedback to both systems ##########
@@ -250,9 +250,9 @@ for trl in range(n_trl - 1):
     post = g[(0, 4), :].sum(axis=1) 
 
     # implement / force hard laterial inhibition
-    if resp_neuron[trl] == 0: # if the resp_neurononse was A 
+    if resp_neuron[trl] == 1: # if the resp_neurononse was A 
         post[1] = 0 # force the B pathway to be inactive
-    elif resp_neuron[trl] == 1:
+    elif resp_neuron[trl] == 2:
         post[0] = 0
 
     post_ltp_1 = np.heaviside(post - theta, 0)
@@ -353,22 +353,24 @@ axs[0].legend()
 axs[0].grid(True)
 
 # --- 2. Procedural Pathway ---
-axs[1].plot(resp_neuron, label="Procedural Response", color="blue")
+#axs[1].plot(resp_neuron, label="Procedural Response", color="blue")
+#axs[1].plot(np.where(resp_neuron == 2, 1, 0), label="Procedural Response", color="blue")
 axs[1].plot(confidence_neuron, label="Confidence", linestyle="--", color="skyblue")
-axs[1].plot(corectness_neuron, label="Correct Response Indicator", color="gray", linewidth=1)
+axs[1].plot(corectness_neuron, label="Correct Response ", color="blue", linewidth=1)
 axs[1].set_ylabel("Response / Confidence")
-axs[1].set_title("Procedural Pathway: Response + Confidence + Correctness")
+axs[1].set_title("Procedural Pathway")
 axs[1].set_ylim(-0.1, 1.2)
 axs[1].legend()
 axs[1].grid(True)
 
 # --- 3. Rulebased Pathway ---
-axs[2].plot(resp_rulebased, label="Rulebased Response", color="orange")
+#axs[2].plot(resp_rulebased, label="Rulebased Response", color="orange")
+#axs[2].plot(np.where(resp_rulebased == 2, 1, 0), label="Rulebased Response", color="orange")
 axs[2].plot(confidence_rulebased, label="Confidence", linestyle="--", color="navajowhite")
-axs[2].plot(corectness_rulebased, label="Correct Response Indicator", color="gray", linewidth=1)
+axs[2].plot(corectness_rulebased, label="Correct Response ", color="orange", linewidth=1)
 axs[2].set_ylabel("Response / Confidence")
-axs[2].set_xlabel("Trial")
-axs[2].set_title("Rulebased Pathway: Response + Confidence + Correctness")
+axs[2].set_xlabel("Trial number")
+axs[2].set_title("Rulebased Pathway")
 axs[2].set_ylim(-0.1, 1.2)
 axs[2].legend()
 axs[2].grid(True)
@@ -384,9 +386,9 @@ plt.close()
 coordinates = np.array(coordinates) # Convert to NumPy array for easy plotting
 
 plt.scatter(coordinates[:, 0], coordinates[:, 1])
-plt.xlabel('X')
-plt.ylabel('Y')
-plt.title('Coordinates Scatter Plot')
+plt.xlabel('x coordinates')
+plt.ylabel('y coordinates')
+plt.title('Visual stimnuli')
 plt.savefig(f"plots/{timestamp}_coordinates_scatter_plot.png")
 plt.close()
 
