@@ -5,7 +5,7 @@
 # Two responses (one for each model) -> one is chosen based on confidence
 # Confidence: initial weight -> changes as a weighted reward history
 #
-# I am sorry for the extensive comments, otherwise I am worried I will not understand a thing 
+# Extensive comments, otherwise I am worried I will forget to quick
 ##########################################################################
 
 ########## Packages ##########
@@ -70,7 +70,6 @@ gamma_w = 1e-2
 theta = 0.1
 lamb = 1e-5
 
-
 # Initialising the neurons
 izp = np.array([
     # A pathway neurons  - Response A
@@ -128,6 +127,8 @@ w_vis_msn_over_time_B = np.zeros((n_trl, vis_dim, vis_dim))
 
 # For the plot 
 coordinates = []
+
+############# Starting the simulation #############
 
 print("Starting loop...")
 
@@ -301,10 +302,10 @@ for trl in range(n_trl - 1):
     
     if confidence_rulebased[trl] > confidence_neuron[trl]:
         global_resp[trl] = resp_rulebased[trl]
-        print("Rulebased pathway chosen")
+        #print("Rulebased pathway chosen")
     else:   
         global_resp[trl] = resp_neuron[trl]
-        print("Procedural pathway chosen")
+        #print("Procedural pathway chosen")
     
 # save some of the variables as a .csv to inpect 
 df = pd.DataFrame({
@@ -382,19 +383,10 @@ plt.close()
 
 
 # Scatterplot of coordinates
-
 coordinates = np.array(coordinates) # Convert to NumPy array for easy plotting
 
 plt.scatter(coordinates[:, 0], coordinates[:, 1])
-plt.xlabel('x coordinates')
-plt.ylabel('y coordinates')
-plt.title('Visual stimnuli')
-plt.savefig(f"plots/{timestamp}_coordinates_scatter_plot.png")
-plt.close()
-
-# Scatterplot of rulebased rule
-plt.scatter(coordinates[:, 0], coordinates[:, 1])
-plt.axvline(x=50, color='red', linestyle='--', label='Decision Boundary (x=50)')
+plt.axvline(x=50, color='red', linestyle='--', label='Decision Boundary (x=50)') # line of rulebased bound
 plt.xlabel('x coordinates')
 plt.ylabel('y coordinates')
 plt.title('Visual stimuli')
@@ -426,3 +418,6 @@ ani = FuncAnimation(fig, update, frames=n_trl, interval=100, blit=True)
 
 # Save with timestamp
 ani.save(f"videos/{timestamp}_vis_input_animation{n_trl}_{vis_dim}.mp4", writer="ffmpeg", fps=10)
+
+
+## That was all - thank you
